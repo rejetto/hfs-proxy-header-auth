@@ -25,7 +25,7 @@ HFS plugin that trusts reverse-proxy identity headers and logs users into their 
 4. Configure this plugin:
    - `trustedProxies`: proxy IP/netmask(es)
    - `userHeader`: header carrying identity
-   - optionally `requiredHeaderName` + `requiredHeaderValue`
+   - optionally `requiredHeaderName` + `_requiredHeaderValue` (shown as "Required header value")
 5. Configure proxy/client logout behavior:
    - browser flow: follow HTTP redirects;
    - API flow: consume `x-proxy-header-auth-logout` and redirect/logout on that value.
@@ -55,7 +55,8 @@ you can map to account `alice` by enabling `allowEmailLocalPart`, or with explic
 ## Production notes
 
 - Keep `trustedProxies` strict: include only your reverse-proxy IPs/networks (avoid `*`).
-- Set `requiredHeaderName` + `requiredHeaderValue` to add a shared-secret check between proxy and HFS.
+- Set `requiredHeaderName` + `_requiredHeaderValue` to add a shared-secret check between proxy and HFS.
+- On upgrade, `requiredHeaderValue` is automatically migrated to `_requiredHeaderValue` and the old key is removed. An already configured `_requiredHeaderValue` takes precedence. The leading underscore excludes the secret from HFS's "Export without passwords".
 - Choose `logoutWhenHeaderMissing` based on your proxy behavior:
   - `true` keeps HFS session aligned with proxy auth state;
   - `false` avoids unexpected logout if some routes are missing auth headers.

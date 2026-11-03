@@ -1,4 +1,4 @@
-exports.version = 0.3
+exports.version = 1.0
 exports.description = "login from trusted reverse-proxy identity headers (proxy-side auth required)"
 exports.apiRequired = 12
 exports.repo = "rejetto/hfs-proxy-header-auth"
@@ -19,7 +19,8 @@ exports.config = {
         helperText: "Optional shared-secret header name",
         md: 6
     },
-    requiredHeaderValue: {
+    _requiredHeaderValue: {
+        label: "Required header value",
         defaultValue: '',
         inputProps: { type: 'password' },
         md: 6,
@@ -101,6 +102,15 @@ exports.init = api => {
     const { netMatches, wantArray } = api.misc
     const pluginId = api.id || 'proxy-header-auth'
 
+    const config = api.getHfsConfig('plugins_config')?.[api.id]
+    if (config && 'requiredHeaderValue' in config) {
+        // remove the legacy key so exports cannot retain an unprotected copy of the secret
+        if (!('_requiredHeaderValue' in config)) {
+            api.setConfig('_requiredHeaderValue', config.requiredHeaderValue)
+        }
+        api.setConfig('requiredHeaderValue', undefined)
+    }
+
     return { middleware }
 
     async function middleware(ctx) {
@@ -178,13 +188,13 @@ exports.init = api => {
 
     function isSecretValid(ctx) {
         const name = String(api.getConfig('requiredHeaderName') || '').trim()
-        const expected = String(api.getConfig('requiredHeaderValue') || '')
+        const expected = String(api.getConfig('_requiredHeaderValue') || '')
 
         if (!name && !expected)
             return true
 
         if (!name || !expected) {
-            api.log("requiredHeaderName/requiredHeaderValue misconfigured, refusing request")
+            api.log("requiredHeaderName/_requiredHeaderValue misconfigured, refusing request")
             return false
         }
         return getHeader(ctx, name) === expected
